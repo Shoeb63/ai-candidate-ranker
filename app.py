@@ -265,10 +265,15 @@ with col2:
             placeholder="Senior AI Engineer role requiring embeddings, RAG, vector search..."
         )
     else:
-        jd_file = st.file_uploader("Upload job_description.txt", type=["txt", "docx"])
+        jd_file = st.file_uploader("Upload job_description.txt or .docx", type=["txt", "docx"])
         jd_text = ""
         if jd_file:
-            jd_text = jd_file.read().decode("utf-8")
+            if jd_file.name.lower().endswith(".docx"):
+                from docx import Document
+                doc = Document(jd_file)
+                jd_text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+            else:
+                jd_text = jd_file.read().decode("utf-8")
             st.success(f"✅ JD uploaded: {jd_file.name}")
 
 st.divider()
