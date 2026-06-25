@@ -254,6 +254,13 @@ with col1:
     if candidates_file:
         st.success(f"✅ File uploaded: {candidates_file.name}")
 
+    st.markdown("**— or —**")
+    use_sample = st.button("🗂️ Use Sample Dataset (10,000 candidates)", use_container_width=True, type="secondary")
+    if use_sample:
+        st.session_state["use_sample_dataset"] = True
+    if st.session_state.get("use_sample_dataset") and not candidates_file:
+        st.success("✅ Sample dataset selected: candidates.jsonl (10,000 candidates)")
+
 with col2:
     st.subheader("📝 Step 2: Job Description")
     jd_option = st.radio("Choose input method", ["Paste text", "Upload file"], horizontal=True)
@@ -285,8 +292,9 @@ with run_col:
 
 # ── Pipeline execution ────────────────────────────────────────────
 if run_clicked:
-    if not candidates_file:
-        st.error("❌ Please upload candidates.jsonl file first!")
+    using_sample = st.session_state.get("use_sample_dataset", False) and not candidates_file
+    if not candidates_file and not using_sample:
+        st.error("❌ Please upload candidates.jsonl file — or click **Use Sample Dataset**!")
         st.stop()
     if not jd_text or len(jd_text.strip()) < 20:
         st.error("❌ Please provide a job description!")
@@ -295,10 +303,18 @@ if run_clicked:
     # Load candidates
     with st.spinner("📂 Loading candidates..."):
         candidates = []
-        content = candidates_file.read().decode("utf-8")
-        for line in content.strip().split("\n"):
-            if line.strip():
-                candidates.append(json.loads(line.strip()))
+        if using_sample:
+            import os
+            sample_path = os.path.join(os.path.dirname(__file__), "data", "candidates.jsonl")
+            with open(sample_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        candidates.append(json.loads(line.strip()))
+        else:
+            content = candidates_file.read().decode("utf-8")
+            for line in content.strip().split("\n"):
+                if line.strip():
+                    candidates.append(json.loads(line.strip()))
         candidate_map = {c["candidate_id"]: c for c in candidates}
         st.success(f"✅ Loaded **{len(candidates):,}** candidates")
 
